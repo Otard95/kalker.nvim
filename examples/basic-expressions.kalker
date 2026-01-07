@@ -1,0 +1,16 @@
+-- Declare functions
+f(x) = x(3x + 1)
+
+-- Declare variables
+a = 1÷6
+
+-- Differentiation
+6ia√(f'(a))
+
+-- Integration
+∫(0, π, sin2ix, dx) + e^(πi) ÷ 3
+
+-- Calculating sums
+Σ(n=0, 720, 1÷n!)
+
+-- Read more on [kalker - A modern calculator that supports variables and functions defined by the user](https://kalker.xyz/)

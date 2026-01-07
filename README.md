@@ -78,27 +78,23 @@ require('kalker').setup({
 ### Example
 
 ```kalker
--- Variable assignment
-x = 5
-y = 10
+-- Declare functions
+f(x) = x(3x + 1)
 
--- Basic arithmetic
-x + y
-x * y
+-- Declare variables
+a = 1÷6
 
--- Function definition
-f(x) = x^2 + 2x + 1
-f(3)
+-- Differentiation
+6ia√(f'(a))
 
--- Calculus
-f'(x)
-∫(0, π, sin(x), dx)
+-- Integration
+∫(0, π, sin2ix, dx) + e^(πi) ÷ 3
 
--- Summation (approximating e)
-Σ(n=0, 20, 1/n!)
+-- Calculating sums
+Σ(n=0, 720, 1÷n!)
 ```
 
-See [examples/basic-expressions.kalker](examples/basic-expressions.kalker) for more examples.
+See [examples/](examples/) for more.
 
 ### Kalker Syntax
 

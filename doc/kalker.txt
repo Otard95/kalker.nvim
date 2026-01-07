@@ -1,0 +1,114 @@
+*kalker.txt*	Live Kalker calculations as virtual text
+
+Author: Otard95
+License: MIT
+
+==============================================================================
+CONTENTS                                                     *kalker-contents*
+
+  1. Introduction ...................... |kalker-introduction|
+  2. Requirements ...................... |kalker-requirements|
+  3. Setup ............................. |kalker-setup|
+  4. Configuration ..................... |kalker-configuration|
+  5. Usage ............................. |kalker-usage|
+
+==============================================================================
+1. INTRODUCTION                                          *kalker-introduction*
+
+kalker.nvim integrates with Kalker (https://kalker.xyz/), a scientific
+calculator supporting user-defined variables and functions. Calculation
+results are displayed as virtual text at the end of each line.
+
+Features:
+- Live calculations displayed as virtual text
+- Error diagnostics for invalid expressions
+- Debounced updates on text changes
+- Comment support (lines starting with `--`)
+
+==============================================================================
+2. REQUIREMENTS                                          *kalker-requirements*
+
+- plenary.nvim (https://github.com/nvim-lua/plenary.nvim)
+- Kalker CLI installed and in PATH (https://kalker.xyz/)
+
+Install Kalker:
+>bash
+  # macOS
+  brew install kalker
+
+  # Cargo
+  cargo install kalker
+
+  # Arch Linux
+  pacman -S kalker
+<
+
+==============================================================================
+3. SETUP                                                        *kalker-setup*
+
+Call the setup function in your Neovim configuration:
+>lua
+  require('kalker').setup()
+<
+
+==============================================================================
+4. CONFIGURATION                                        *kalker-configuration*
+
+                                                            *kalker.setup()*
+setup({opts})
+
+    Configure kalker.nvim with the following options:
+
+    {opts} is a table with the following fields:
+
+    - {calculations.timeout}  (number, default: 300)
+        Timeout for calculations in milliseconds.
+
+    - {debounce}  (number, default: 300)
+        Debounce delay for recalculation in milliseconds.
+
+    - {log_level}  (number, optional)
+        Log level (DEBUG=1, INFO=2, WARN=3, ERROR=4, FATAL=5).
+
+    - {log_file}  (string, optional)
+        Path to log file. If nil, logs to messages.
+
+    Example:
+>lua
+    require('kalker').setup({
+      calculations = {
+        timeout = 300,
+      },
+      debounce = 300,
+    })
+<
+
+==============================================================================
+5. USAGE                                                        *kalker-usage*
+
+1. Create or open a file with the `.kalker` extension
+2. Write mathematical expressions, one per line
+3. Results appear automatically as virtual text
+
+Example `.kalker` file:
+>kalker
+  -- Declare functions
+  f(x) = x(3x + 1)
+
+  -- Declare variables
+  a = 1/6
+
+  -- Differentiation
+  f'(a)
+
+  -- Integration
+  ∫(0, π, sin(x), dx)
+
+  -- Calculating sums
+  Σ(n=0, 720, 1/n!)
+<
+
+For Kalker syntax documentation, see https://kalker.xyz/
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:

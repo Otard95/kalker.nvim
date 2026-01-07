@@ -30,6 +30,8 @@ local str = require('kalker.utils.string')
 ---@field __pending Line|nil
 ---@field __buffer Output[]
 ---@field __marker string
+---@field __timeout integer
+---@field __timeout_timer uv_timer_t|nil
 ---@field __on_result_callbacks ResultCallback[]
 ---@field __on_error_callbacks ErrorCallback[]
 ---@field __on_done_callbacks DoneCallback[]
@@ -44,8 +46,8 @@ local function createMarker()
   return '(' .. table.concat(components, ', ') .. ')'
 end
 
----Create a Kalker instances
----@param timeout integer
+---Create a Kalker instance
+---@param timeout integer Timeout in milliseconds for each calculation
 function Kalker:new(timeout)
   local _self = setmetatable({
     __job = nil,
@@ -53,6 +55,8 @@ function Kalker:new(timeout)
     __pending = nil,
     __buffer = {},
     __marker = createMarker(),
+    __timeout = timeout,
+    __timeout_timer = nil,
 
     __on_result_callbacks = {},
     __on_error_callbacks = {},
@@ -132,6 +136,34 @@ function Kalker:__emit_done()
   end
 end
 
+function Kalker:__start_timeout_timer()
+  self:__stop_timeout_timer()
+  self.__timeout_timer = vim.defer_fn(function()
+    self:__handle_timeout()
+  end, self.__timeout)
+end
+
+function Kalker:__stop_timeout_timer()
+  if self.__timeout_timer then
+    self.__timeout_timer:stop()
+    self.__timeout_timer = nil
+  end
+end
+
+function Kalker:__handle_timeout()
+  logger:debug('[Kalker:__handle_timeout]', 'state', self:to_string())
+
+  self:__emit_error({ line = self.__pending, text = "Calculation timed out" })
+
+  for _, line in ipairs(self.__queue) do
+    self:__emit_error({ line = line, text = "Skipped (previous calculation timed out)" })
+  end
+
+  self.__queue = {}
+  self.__pending = nil
+  self:__emit_done()
+end
+
 ---@param lines Line[]
 function Kalker:process_lines(lines)
   self.__queue = vim.deepcopy(lines)
@@ -147,13 +179,14 @@ end
 function Kalker:__complete_pending()
   logger:debug('[Kalker:__complete_pending]', 'state', self:to_string())
 
+  self:__stop_timeout_timer()
   self.__marker = createMarker()
 
   for _, out in ipairs(self.__buffer) do
     if out.error then
       self:__emit_error({ line = self.__pending, text = out.text })
     else
-      self:__emit_result({ line = self.__pending, text = out.text, is_timeout = false })
+      self:__emit_result({ line = self.__pending, text = out.text })
     end
   end
 
@@ -193,6 +226,7 @@ function Kalker:__send_next()
 
   logger:debug('[Kalker:__send_next]', 'state', self:to_string())
 
+  self:__start_timeout_timer()
   self.__job:send(self.__pending.text .. '\n')
   self.__job:send('__kalker_nvim_marker = ' .. self.__marker .. '\n')
   self.__job:send("__kalker_nvim_marker\n")
@@ -200,6 +234,7 @@ end
 
 function Kalker:done()
   logger:debug('[Kalker:done] stopping kalker')
+  self:__stop_timeout_timer()
   self.__job:shutdown()
 end
 

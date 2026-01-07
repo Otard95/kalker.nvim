@@ -16,12 +16,19 @@ local str = require('kalker.utils.string')
 ---@field line Line
 ---@field text string
 
----@class CalcError
+---@alias DiagnosticSeverity
+---| `vim.diagnostic.severity.ERROR`
+---| `vim.diagnostic.severity.WARN`
+---| `vim.diagnostic.severity.INFO`
+---| `vim.diagnostic.severity.HINT`
+
+---@class CalcDiagnostic
 ---@field line Line
 ---@field text string
+---@field severity DiagnosticSeverity
 
 --- @alias ResultCallback fun (res: CalcResult): nil
---- @alias ErrorCallback fun (res: CalcError): nil
+--- @alias DiagnosticCallback fun (res: CalcDiagnostic): nil
 --- @alias DoneCallback fun (): nil
 
 ---@class Kalker
@@ -33,7 +40,7 @@ local str = require('kalker.utils.string')
 ---@field __timeout integer
 ---@field __timeout_timer uv_timer_t|nil
 ---@field __on_result_callbacks ResultCallback[]
----@field __on_error_callbacks ErrorCallback[]
+---@field __on_diagnostic_callbacks DiagnosticCallback[]
 ---@field __on_done_callbacks DoneCallback[]
 local Kalker = {}
 Kalker.__index = Kalker
@@ -59,7 +66,7 @@ function Kalker:new(timeout)
     __timeout_timer = nil,
 
     __on_result_callbacks = {},
-    __on_error_callbacks = {},
+    __on_diagnostic_callbacks = {},
     __on_done_callbacks = {},
   }, self)
 
@@ -104,10 +111,10 @@ function Kalker:on_result(callback)
   table.insert(self.__on_result_callbacks, callback)
 end
 
----Add a callback to be called for each error
----@param callback ErrorCallback
-function Kalker:on_error(callback)
-  table.insert(self.__on_error_callbacks, callback)
+---Add a callback to be called for each diagnostic
+---@param callback DiagnosticCallback
+function Kalker:on_diagnostic(callback)
+  table.insert(self.__on_diagnostic_callbacks, callback)
 end
 
 ---Add a callback to be called when queue is empty
@@ -123,10 +130,10 @@ function Kalker:__emit_result(result)
   end
 end
 
----@param error CalcError
-function Kalker:__emit_error(error)
-  for _, cb in ipairs(self.__on_error_callbacks) do
-    cb(error)
+---@param diagnostic CalcDiagnostic
+function Kalker:__emit_diagnostic(diagnostic)
+  for _, cb in ipairs(self.__on_diagnostic_callbacks) do
+    cb(diagnostic)
   end
 end
 
@@ -153,10 +160,18 @@ end
 function Kalker:__handle_timeout()
   logger:debug('[Kalker:__handle_timeout]', 'state', self:to_string())
 
-  self:__emit_error({ line = self.__pending, text = "Calculation timed out" })
+  self:__emit_diagnostic({
+    line = self.__pending,
+    text = "Calculation timed out",
+    severity = vim.diagnostic.severity.WARN,
+  })
 
   for _, line in ipairs(self.__queue) do
-    self:__emit_error({ line = line, text = "Skipped (previous calculation timed out)" })
+    self:__emit_diagnostic({
+      line = line,
+      text = "Skipped (previous calculation timed out)",
+      severity = vim.diagnostic.severity.INFO,
+    })
   end
 
   self.__queue = {}
@@ -184,7 +199,11 @@ function Kalker:__complete_pending()
 
   for _, out in ipairs(self.__buffer) do
     if out.error then
-      self:__emit_error({ line = self.__pending, text = out.text })
+      self:__emit_diagnostic({
+        line = self.__pending,
+        text = out.text,
+        severity = vim.diagnostic.severity.ERROR,
+      })
     else
       self:__emit_result({ line = self.__pending, text = out.text })
     end

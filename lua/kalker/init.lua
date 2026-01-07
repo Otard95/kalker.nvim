@@ -62,15 +62,15 @@ function M.__calculate(bufnr)
       virt_text = { { result.text, 'Comment' } },
     })
   end)
-  kalker:on_error(function(error)
-    logger:debug('[kalker.nvim](__calculate -> on_error) adding diagnostic', 'error', error)
+  kalker:on_diagnostic(function(diagnostic)
+    logger:debug('[kalker.nvim](__calculate -> on_diagnostic) adding diagnostic', 'diagnostic', diagnostic)
     table.insert(diagnostics, {
-      lnum = error.line.row - 1,
+      lnum = diagnostic.line.row - 1,
       col = 0,
-      end_lnum = error.line.row - 1,
-      end_col = #error.line.text - 1,
-      severity = vim.diagnostic.severity.ERROR,
-      message = error.text,
+      end_lnum = diagnostic.line.row - 1,
+      end_col = #diagnostic.line.text - 1,
+      severity = diagnostic.severity,
+      message = diagnostic.text,
       source = "kalker.nvim",
     })
   end)

@@ -231,6 +231,7 @@ function Kalker:__on_line(data, stdout)
 
   if not self:__is_marker(line) then
     table.insert(self.__buffer, { text = line, error = not stdout })
+    return
   end
 
   logger:debug('[Kalker:__on_line] got unexpected line', 'line', line, 'state', self:to_string())
